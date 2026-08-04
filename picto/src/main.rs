@@ -3,19 +3,32 @@ use std::thread;
 use client::client::Client;
 
 fn main() {
-    let client = Client::new().expect("Failed to create a new Client");
+    // Bind to a socket
+    println!("First, bind your socket to an address: ");
+    let mut bind_address = String::new();
+    std::io::stdin()
+        .read_line(&mut bind_address)
+        .expect("Failed to get input");
 
+    let client =
+        Client::new(bind_address.trim().to_string()).expect("Failed to create a new Client");
+
+    // Get the name of the client
     println!("What is your name?");
     let mut name = String::new();
     std::io::stdin()
         .read_line(&mut name)
         .expect("Failed to get input");
 
+    name.trim().to_string();
+
     println!("Insert the address where you want to connect: ");
     let mut endpoint = String::new();
     std::io::stdin()
         .read_line(&mut endpoint)
         .expect("Failed to get input");
+
+    endpoint.trim().to_string();
 
     client
         .connect(&endpoint)

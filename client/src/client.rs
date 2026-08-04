@@ -6,8 +6,8 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new() -> std::io::Result<Self> {
-        let socket = UdpSocket::bind("0.0.0.0:0")?;
+    pub fn new<A: ToSocketAddrs>(endpoint: A) -> std::io::Result<Self> {
+        let socket = UdpSocket::bind(endpoint)?;
         Ok(Self { socket })
     }
 
@@ -28,7 +28,7 @@ impl Client {
 
 impl Default for Client {
     fn default() -> Self {
-        Self::new().expect("Failed to bind UDP socket")
+        Self::new("0.0.0.0:0").expect("Failed to bind UDP socket")
     }
 }
 
@@ -38,13 +38,13 @@ mod tests {
 
     #[test]
     fn client_binds_successfully() {
-        let client = Client::new();
+        let client = Client::new("0.0.0.0:0");
         assert!(client.is_ok());
     }
 
     #[test]
     fn client_has_local_addr() {
-        let client = Client::new().unwrap();
+        let client = Client::new("0.0.0.0:0").unwrap();
         assert!(client.socket.local_addr().is_ok());
     }
 }
