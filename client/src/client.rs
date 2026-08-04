@@ -15,6 +15,12 @@ impl Client {
         self.socket.connect(endpoint)
     }
 
+    pub fn try_clone(&self) -> std::io::Result<Self> {
+        Ok(Self {
+            socket: self.socket.try_clone()?,
+        })
+    }
+
     /// Send a message to the connected endpoint
     pub fn send(&self, data: &[u8]) -> std::io::Result<usize> {
         self.socket.send(data)
