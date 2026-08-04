@@ -66,6 +66,7 @@ fn main() {
     // sending thread
     loop {
         let id = name.trim().to_string() + "> ";
+        print!("{id}");
         std::io::stdout().flush().unwrap();
 
         input.clear();
