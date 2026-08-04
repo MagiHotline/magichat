@@ -28,10 +28,10 @@ fn main() {
         .read_line(&mut endpoint)
         .expect("Failed to get input");
 
-    endpoint.trim().to_string();
+    println!("ENDPOINT IN CONNECTION: {endpoint}");
 
     client
-        .connect(&endpoint)
+        .connect(&endpoint.trim().to_string())
         .expect("Failed to connect to the address");
 
     println!(
