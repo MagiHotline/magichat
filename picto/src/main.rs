@@ -53,8 +53,9 @@ fn main() {
     thread::spawn(move || {
         loop {
             let mut buf = [0; 10];
-            if let Ok(received) = receiver_client.lock().unwrap().recv(&mut buf) {
-                println!("Received {received} bytes {:?}", &buf[..received]);
+            if let Ok(_) = receiver_client.lock().unwrap().recv(&mut buf) {
+                let output = str::from_utf8(&buf).expect("Failed to convert from bytes to string");
+                println!("{output}");
             } else {
                 println!("recv function failed");
                 break;
@@ -64,7 +65,7 @@ fn main() {
 
     // sending thread
     loop {
-        print!("{}> ", name.trim().to_string());
+        let id = name.trim().to_string() + "> ";
         std::io::stdout().flush().unwrap();
 
         input.clear();
@@ -75,7 +76,7 @@ fn main() {
         sender_client
             .lock()
             .unwrap()
-            .send(input.as_bytes())
+            .send((id + &input).as_bytes())
             .expect("Failed to transform string to bytes");
     }
 }
