@@ -1,4 +1,8 @@
-use std::thread;
+use std::{
+    io::Write,
+    sync::{Arc, Mutex},
+    thread,
+};
 
 use client::client::Client;
 
@@ -13,14 +17,16 @@ fn main() {
     let client =
         Client::new(bind_address.trim().to_string()).expect("Failed to create a new Client");
 
+    // Needs mutable access
+    let sender_client = Arc::new(Mutex::new(client));
+    let receiver_client = Arc::clone(&sender_client);
+
     // Get the name of the client
     println!("What is your name?");
     let mut name = String::new();
     std::io::stdin()
         .read_line(&mut name)
         .expect("Failed to get input");
-
-    name.trim().to_string();
 
     println!("Insert the address where you want to connect: ");
     let mut endpoint = String::new();
@@ -30,7 +36,9 @@ fn main() {
 
     println!("ENDPOINT IN CONNECTION: {endpoint}");
 
-    client
+    sender_client
+        .lock()
+        .unwrap()
         .connect(&endpoint.trim().to_string())
         .expect("Failed to connect to the address");
 
@@ -40,23 +48,33 @@ fn main() {
     );
 
     let mut input = String::new();
-    loop {
-        /*  Listening Thread
-        thread::spawn(|| {
-            let mut buf = [0; 10];
-            match client.recv(&mut buf) {
-                Ok(received) => println!("Received {received} bytes {:?}", &buf[..received]),
-                Err(e) => println!("recv function failed: {e:?}"),
-            }
-        });
-        */
 
-        println!("{} >> ", name);
+    // Spawn the "listening thread"
+    thread::spawn(move || {
+        loop {
+            let mut buf = [0; 10];
+            if let Ok(received) = receiver_client.lock().unwrap().recv(&mut buf) {
+                println!("Received {received} bytes {:?}", &buf[..received]);
+            } else {
+                println!("recv function failed");
+                break;
+            }
+        }
+    });
+
+    // sending thread
+    loop {
+        print!("{}> ", name.trim().to_string());
+        std::io::stdout().flush().unwrap();
+
+        input.clear();
         std::io::stdin()
             .read_line(&mut input)
             .expect("Failed to get input");
 
-        client
+        sender_client
+            .lock()
+            .unwrap()
             .send(input.as_bytes())
             .expect("Failed to transform string to bytes");
     }
