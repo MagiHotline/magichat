@@ -2,13 +2,14 @@ use std::net::{ToSocketAddrs, UdpSocket};
 
 #[derive(Debug)]
 pub struct Client {
+    name: String,
     socket: UdpSocket,
 }
 
 impl Client {
-    pub fn new<A: ToSocketAddrs>(endpoint: A) -> std::io::Result<Self> {
+    pub fn new<A: ToSocketAddrs>(name: String, endpoint: A) -> std::io::Result<Self> {
         let socket = UdpSocket::bind(endpoint)?;
-        Ok(Self { socket })
+        Ok(Self { name, socket })
     }
 
     pub fn connect<A: ToSocketAddrs>(&self, endpoint: A) -> std::io::Result<()> {
@@ -17,6 +18,7 @@ impl Client {
 
     pub fn try_clone(&self) -> std::io::Result<Self> {
         Ok(Self {
+            name: self.name.clone(),
             socket: self.socket.try_clone()?,
         })
     }
@@ -30,11 +32,15 @@ impl Client {
     pub fn recv(&self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.socket.recv(buf)
     }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
 }
 
 impl Default for Client {
     fn default() -> Self {
-        Self::new("0.0.0.0:0").expect("Failed to bind UDP socket")
+        Self::new(String::new(), "0.0.0.0:0").expect("Failed to bind UDP socket")
     }
 }
 
@@ -44,13 +50,13 @@ mod tests {
 
     #[test]
     fn client_binds_successfully() {
-        let client = Client::new("0.0.0.0:0");
+        let client = Client::new(String::new(), "0.0.0.0:0");
         assert!(client.is_ok());
     }
 
     #[test]
     fn client_has_local_addr() {
-        let client = Client::new("0.0.0.0:0").unwrap();
+        let client = Client::new(String::new(), "0.0.0.0:0").unwrap();
         assert!(client.socket.local_addr().is_ok());
     }
 }

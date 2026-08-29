@@ -1,17 +1,27 @@
+use color_eyre::eyre::Result;
 use std::{io::Write, thread};
 
 use client::client::Client;
 
-fn main() {
+use crate::app::App;
+
+pub mod app;
+pub mod event;
+pub mod tui;
+pub mod ui;
+pub mod update;
+
+fn main() -> Result<()> {
+    color_eyre::install()?; // install the panic hooks of eyre
+
+    let mut app = App::new();
+
     // Bind to a socket
-    println!("First, bind your socket to an address: ");
+    println!("First, bind your socket to an address (X.X.X.X:YYYY): ");
     let mut bind_address = String::new();
     std::io::stdin()
         .read_line(&mut bind_address)
         .expect("Failed to get input");
-
-    let client =
-        Client::new(bind_address.trim().to_string()).expect("Failed to create a new Client");
 
     // Get the name of the client
     println!("What is your name?");
@@ -20,9 +30,10 @@ fn main() {
         .read_line(&mut name)
         .expect("Failed to get input");
 
-    name = name.trim().to_string();
+    let client = Client::new(name.trim().to_string(), bind_address.trim().to_string())
+        .expect("Failed to create a new Client");
 
-    println!("Insert the address where you want to connect: ");
+    println!("Insert the address where you want to connect (X.X.X.X:YYYY): ");
     let mut endpoint = String::new();
     std::io::stdin()
         .read_line(&mut endpoint)
@@ -45,7 +56,7 @@ fn main() {
     // Spawn the "listening thread"
     thread::spawn(move || {
         loop {
-            let mut buf = [0; 1024];
+            let mut buf = [0; 8192];
             if let Ok(received) = receiver_client.recv(&mut buf) {
                 if let Ok(output) = str::from_utf8(&buf[..received]) {
                     println!("{output}");
@@ -59,7 +70,7 @@ fn main() {
 
     // sending thread
     loop {
-        let prompt = format!("{name}> ");
+        let prompt = format!("{}> ", client.name());
         std::io::stdout().flush().unwrap();
 
         input.clear();
@@ -72,4 +83,6 @@ fn main() {
             .send(message.as_bytes())
             .expect("Failed to transform string to bytes");
     }
+
+    Ok(())
 }
