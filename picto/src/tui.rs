@@ -2,9 +2,9 @@ use std::{io, panic};
 
 use color_eyre::Result;
 use ratatui::crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
+    event::DisableMouseCapture,
     execute,
-    terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{self, LeaveAlternateScreen},
 };
 
 pub type CrosstermTerminal = ratatui::Terminal<ratatui::backend::CrosstermBackend<std::io::Stderr>>;
@@ -35,7 +35,10 @@ impl Tui {
             Self::reset().expect("Unable to reset the terminal");
             panic_hook(panic);
         }));
-        todo!()
+
+        self.terminal.hide_cursor()?;
+        self.terminal.clear()?;
+        Ok(())
     }
 
     /// Resets the terminal interface.
@@ -61,7 +64,7 @@ impl Tui {
     ///
     /// [`Draw`]: tui::Terminal::draw
     /// [`rendering`]: crate::ui:render
-    pub fn draw(&mut self) -> Result<()> {
+    pub fn draw(&mut self, app: &mut App) -> Result<()> {
         self.terminal.draw(|frame| ui::render(app, frame))?;
         Ok(())
     }

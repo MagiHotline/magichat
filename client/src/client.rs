@@ -2,8 +2,8 @@ use std::net::{ToSocketAddrs, UdpSocket};
 
 #[derive(Debug)]
 pub struct Client {
-    name: String,
-    socket: UdpSocket,
+    pub name: String,
+    pub socket: UdpSocket,
 }
 
 impl Client {

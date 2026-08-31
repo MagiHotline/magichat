@@ -1,12 +1,11 @@
 use color_eyre::eyre::Result;
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::{io::Write, thread};
-
-use client::client::Client;
 
 use crate::{
     app::App,
     event::{Event, EventHandler},
+    tui::Tui,
+    update::update,
 };
 
 pub mod app;
@@ -20,7 +19,7 @@ fn main() -> Result<()> {
 
     let mut app = App::new();
     let backend = CrosstermBackend::new(std::io::stderr());
-    let terminal = Terminal::new(backend);
+    let terminal = Terminal::new(backend)?;
     let events = EventHandler::new(250); // a tick is every 250 ms
     let mut tui = Tui::new(terminal, events);
     tui.enter()?;
