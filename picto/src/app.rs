@@ -1,3 +1,8 @@
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+};
+
 use crate::app::ActiveEditingArea::{ClientName, ClientSocket, DestinationSocket};
 use client::client::Client;
 
@@ -43,7 +48,7 @@ pub struct App {
     /// App's current state
     pub state: AppState,
     /// Messages that are sent and received
-    pub messages: Vec<String>,
+    pub messages: Arc<Mutex<Vec<String>>>,
     /// Input chat message
     pub input: String,
 }
@@ -59,7 +64,7 @@ impl Default for App {
             curr_char_idx: 0,
             host_ip_address: Default::default(),
             state: AppState::Filling,
-            messages: Vec::new(),
+            messages: Arc::new(Mutex::new(Vec::new())),
             input: Default::default(),
         }
     }
@@ -217,12 +222,25 @@ impl App {
 
     /// Submits connection's data to the protocol
     pub fn submit(&mut self) {
-        self.state = AppState::Connection;
+        match self.state {
+            AppState::Filling => {
+                self.state = AppState::Connection;
+                let client = Client::new(self.host.name.clone(), self.host_ip_address.clone())
+                    .expect("Failed to create client once submitted");
 
-        let client = Client::new(self.host.name.clone(), self.host_ip_address.clone())
-            .expect("Failed to create client once submitted");
-
-        self.host = client;
+                self.host = client;
+            }
+            AppState::Connected => {
+                let full_message = format!("{}: {}", self.host.name.clone(), self.input.clone());
+                self.messages.lock().unwrap().push(full_message.clone());
+                self.host
+                    .send(full_message.as_bytes())
+                    .expect("Failed to transform string to bytes");
+                self.input.clear();
+                self.reset_cursor();
+            }
+            _ => {}
+        }
     }
 
     /// Once data is submitted, it connects to the destination
@@ -231,6 +249,23 @@ impl App {
         self.host
             .connect(self.dest_ip_address.trim().to_string())
             .expect("Failed to connect to endpoint");
+
+        let receiver_client = self.host.try_clone().expect("Failed to clone Client");
+        // Once connected, spawn the listening thread
+        let recv_messages = self.messages.clone();
+        thread::spawn(move || {
+            loop {
+                let mut buf = [0; 8192];
+                if let Ok(received) = receiver_client.recv(&mut buf) {
+                    if let Ok(output) = str::from_utf8(&buf[..received]) {
+                        recv_messages.lock().unwrap().push(output.to_string());
+                    }
+                } else {
+                    println!("Recv function failed");
+                    break;
+                }
+            }
+        });
 
         self.state = AppState::Connected;
         self.editing_area = ActiveEditingArea::Input;

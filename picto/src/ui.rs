@@ -16,7 +16,14 @@ pub fn render_chat(app: &mut App, frame: &mut Frame) {
         Constraint::Length(1),
     ]);
 
-    let [messages_area, input_area, _] = frame.area().layout(&layout);
+    let [messages_area, input_area, help_area] = frame.area().layout(&layout);
+
+    let (msg, style) = (format!("[Esc] quit"), Style::default().fg(Color::Gray));
+    let text = Text::from(Line::from(msg)).patch_style(style);
+    let help_message = Paragraph::new(text)
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true });
+    frame.render_widget(help_message, help_area);
 
     // Render the three text fields
     let input = Paragraph::new(app.input.as_str())
@@ -38,9 +45,11 @@ pub fn render_chat(app: &mut App, frame: &mut Frame) {
 
     let messages: Vec<ListItem> = app
         .messages
+        .lock()
+        .unwrap()
         .iter()
         .map(|m| {
-            let content = Line::from(Span::raw(format!("{}: {m}", app.host.name)));
+            let content = Line::from(Span::raw(m.to_string()));
             ListItem::new(content)
         })
         .collect();
