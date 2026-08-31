@@ -1,6 +1,8 @@
-# Pictochat
+# MagiChat
 
-Pictochat allows you to communicate with any computer in your network via UDP.
+MagiChat allows you to communicate with any computer in your network via UDP.
+MagiChat is heavily inspired to Nintendo's Pictochat (I had so much fun with all the DS's ecosystem, I wanted
+to pay homage).
 Now as a TUI thanks to [Ratatui](https://ratatui.rs/)!
 
 # Usage
