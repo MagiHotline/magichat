@@ -6,7 +6,7 @@ Now as a TUI thanks to [Ratatui](https://ratatui.rs/)!
 # Usage
 
 Before using Pictochat you need to have installed [cargo](https://doc.rust-lang.org/cargo/).
-Run this command inside
+Run the following commands:
 
 ```bash
 git clone git@github.com:MagiHotline/pictochat.git
