@@ -17,7 +17,10 @@ pub fn update(app: &mut App, key: KeyEvent) {
             _ => {}
         },
         crate::app::InputMode::Editing => match key.code {
-            KeyCode::Enter => app.submit(),
+            KeyCode::Enter => {
+                app.submit();
+                app.try_connection()
+            }
             KeyCode::Char(to_insert) => app.enter_char(to_insert),
             KeyCode::Backspace => app.delete_char(),
             KeyCode::Tab => app.next_field(),

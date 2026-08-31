@@ -6,8 +6,8 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 
-use crate::app::InputMode;
 use crate::app::{ActiveEditingArea, App};
+use crate::app::{AppState, InputMode};
 
 pub fn render(app: &mut App, frame: &mut Frame) {
     let outer_layout = Layout::horizontal([
@@ -25,7 +25,6 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         Constraint::Min(1),
     ]);
 
-    // let [[block => 3 x input_area], messages_area] = frame.area().layout(&layout);
     let [_, main_area, message_area, _] = center_area.layout(&layout);
 
     let inner_layout = Layout::vertical([
@@ -44,14 +43,28 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         _,
     ] = main_area.layout(&inner_layout);
 
-    let (msg, style) = match app.input_mode {
-        InputMode::Normal => (
-            format!("[q] Exit | [e] Edit"),
-            Style::default().add_modifier(Modifier::RAPID_BLINK),
+    let (msg, style) = match app.state {
+        AppState::Filling => match app.input_mode {
+            InputMode::Normal => (
+                format!("[q] Exit | [e] Edit"),
+                Style::default().add_modifier(Modifier::RAPID_BLINK),
+            ),
+            InputMode::Editing => (
+                format!("[Esc] Stop editing, [Enter] Submit, [Tab/Untab] Move"),
+                Style::default().add_modifier(Modifier::RAPID_BLINK),
+            ),
+        },
+        AppState::Connection => (
+            format!("Connecting to client..."),
+            Style::default()
+                .add_modifier(Modifier::RAPID_BLINK)
+                .fg(Color::Yellow),
         ),
-        InputMode::Editing => (
-            format!("[Esc] Stop editing, [Enter] Submit, [Tab/Untab] Move"),
-            Style::default().add_modifier(Modifier::RAPID_BLINK),
+        AppState::Connected => (
+            format!("Connection successful!"),
+            Style::default()
+                .add_modifier(Modifier::RAPID_BLINK)
+                .fg(Color::Green),
         ),
     };
 

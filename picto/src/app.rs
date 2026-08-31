@@ -1,6 +1,5 @@
 use crate::app::ActiveEditingArea::{ClientName, ClientSocket, DestinationSocket};
 use client::client::Client;
-use color_eyre::Result;
 
 /// Represents Input modes.
 #[derive(Debug)]
@@ -15,6 +14,14 @@ pub enum ActiveEditingArea {
     ClientName,
     ClientSocket,
     DestinationSocket,
+}
+
+/// Represents App's states
+#[derive(Debug)]
+pub enum AppState {
+    Filling,
+    Connection,
+    Connected,
 }
 
 /// App's state.
@@ -32,6 +39,8 @@ pub struct App {
     pub input_mode: InputMode,
     /// Current editing area
     pub editing_area: ActiveEditingArea,
+    /// App's current state
+    pub state: AppState,
 }
 
 impl Default for App {
@@ -44,6 +53,7 @@ impl Default for App {
             input_mode: InputMode::Normal,
             curr_char_idx: 0,
             host_ip_address: Default::default(),
+            state: AppState::Filling,
         }
     }
 }
@@ -185,12 +195,21 @@ impl App {
 
     /// Submits connection's data to the protocol
     pub fn submit(&mut self) {
-        todo!()
+        self.state = AppState::Connection;
+
+        let client = Client::new(self.host.name.clone(), self.host_ip_address.clone())
+            .expect("Failed to create client once submitted");
+
+        self.host = client;
     }
 
     /// Once data is submitted, it connects to the destination
     /// If not, sends you back to the Menu with all the areas empty
-    pub fn try_connection() -> Result<()> {
-        todo!()
+    pub fn try_connection(&mut self) {
+        self.host
+            .connect(self.dest_ip_address.trim().to_string())
+            .expect("Failed to connect to endpoint");
+
+        self.state = AppState::Connected;
     }
 }
