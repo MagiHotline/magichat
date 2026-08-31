@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Layout, Position},
     style::{Color, Modifier, Style},
     text::{Line, Text},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Paragraph, Wrap},
 };
 
 use crate::app::InputMode;
@@ -12,7 +12,7 @@ use crate::app::{ActiveEditingArea, App};
 pub fn render(app: &mut App, frame: &mut Frame) {
     let outer_layout = Layout::horizontal([
         Constraint::Fill(1),
-        Constraint::Percentage(40),
+        Constraint::Percentage(30),
         Constraint::Fill(1),
     ]);
 
@@ -20,12 +20,13 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
     let layout = Layout::vertical([
         Constraint::Min(1),
-        Constraint::Percentage(50),
+        Constraint::Length(13),
+        Constraint::Length(2),
         Constraint::Min(1),
     ]);
 
     // let [[block => 3 x input_area], messages_area] = frame.area().layout(&layout);
-    let [_, main_area, message_area] = center_area.layout(&layout);
+    let [_, main_area, message_area, _] = center_area.layout(&layout);
 
     let inner_layout = Layout::vertical([
         Constraint::Length(2),
@@ -45,19 +46,19 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
     let (msg, style) = match app.input_mode {
         InputMode::Normal => (
-            format!("Press 'q' to exit, 'e' to start editing"),
+            format!("[q] Exit | [e] Edit"),
             Style::default().add_modifier(Modifier::RAPID_BLINK),
         ),
         InputMode::Editing => (
-            format!(
-                "Press 'Esc' to stop editing, 'Enter' to record the messages, 'Tab/Untab' to move to the next TextFields"
-            ),
+            format!("[Esc] Stop editing, [Enter] Submit, [Tab/Untab] Move"),
             Style::default().add_modifier(Modifier::RAPID_BLINK),
         ),
     };
 
     let text = Text::from(Line::from(msg)).patch_style(style);
-    let help_message = Paragraph::new(text).alignment(Alignment::Center);
+    let help_message = Paragraph::new(text)
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true });
     frame.render_widget(help_message, message_area);
 
     // Render the three text fields
