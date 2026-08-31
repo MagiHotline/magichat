@@ -22,9 +22,9 @@ You will be asked to set three things:
 
 Once you required the data, press `[Enter]` and you will start the chat if all went correctly.
 
-[!WARNING]
-You can connect only to who is already inside your LAN. Not from outside since Pictochat does not have port
-forwarding natively.
+> [!WARNING]
+> You can connect only to who is already inside your LAN. Not from outside since Pictochat does not have port
+> forwarding natively.
 
 ## Roadmap
 
