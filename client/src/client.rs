@@ -32,10 +32,6 @@ impl Client {
     pub fn recv(&self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.socket.recv(buf)
     }
-
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
 }
 
 impl Default for Client {

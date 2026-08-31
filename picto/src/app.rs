@@ -14,6 +14,7 @@ pub enum ActiveEditingArea {
     ClientName,
     ClientSocket,
     DestinationSocket,
+    Input,
 }
 
 /// Represents App's states
@@ -41,6 +42,10 @@ pub struct App {
     pub editing_area: ActiveEditingArea,
     /// App's current state
     pub state: AppState,
+    /// Messages that are sent and received
+    pub messages: Vec<String>,
+    /// Input chat message
+    pub input: String,
 }
 
 impl Default for App {
@@ -54,6 +59,8 @@ impl Default for App {
             curr_char_idx: 0,
             host_ip_address: Default::default(),
             state: AppState::Filling,
+            messages: Vec::new(),
+            input: Default::default(),
         }
     }
 }
@@ -82,6 +89,7 @@ impl App {
             ActiveEditingArea::DestinationSocket => {
                 new_cursor_pos.clamp(0, self.dest_ip_address.chars().count())
             }
+            ActiveEditingArea::Input => new_cursor_pos.clamp(0, self.input.chars().count()),
         }
     }
 
@@ -90,6 +98,7 @@ impl App {
             ClientName => self.editing_area = ClientSocket,
             ClientSocket => self.editing_area = DestinationSocket,
             DestinationSocket => self.editing_area = ClientName,
+            _ => {}
         }
         self.reset_cursor();
     }
@@ -99,6 +108,7 @@ impl App {
             ClientName => self.editing_area = DestinationSocket,
             ClientSocket => self.editing_area = ClientName,
             DestinationSocket => self.editing_area = ClientSocket,
+            _ => {}
         }
         self.reset_cursor();
     }
@@ -117,8 +127,9 @@ impl App {
         let idx = self.byte_index();
         match self.editing_area {
             ClientName => self.host.name.insert(idx, ch),
-            ActiveEditingArea::ClientSocket => self.host_ip_address.insert(idx, ch),
-            ActiveEditingArea::DestinationSocket => self.dest_ip_address.insert(idx, ch),
+            ClientSocket => self.host_ip_address.insert(idx, ch),
+            DestinationSocket => self.dest_ip_address.insert(idx, ch),
+            ActiveEditingArea::Input => self.input.insert(idx, ch),
         }
         self.move_cursor_right();
     }
@@ -156,6 +167,11 @@ impl App {
                     self.dest_ip_address =
                         before_char_to_delete.chain(after_char_to_delete).collect();
                 }
+                ActiveEditingArea::Input => {
+                    let before_char_to_delete = self.input.chars().take(from_left_curr_idx);
+                    let after_char_to_delete = self.input.chars().skip(current_idx);
+                    self.input = before_char_to_delete.chain(after_char_to_delete).collect();
+                }
             }
             self.move_cursor_left();
         }
@@ -186,6 +202,12 @@ impl App {
                 .map(|(i, _)| i)
                 .nth(self.curr_char_idx)
                 .unwrap_or(self.dest_ip_address.len()),
+            ActiveEditingArea::Input => self
+                .input
+                .char_indices()
+                .map(|(i, _)| i)
+                .nth(self.curr_char_idx)
+                .unwrap_or(self.input.len()),
         }
     }
 
@@ -211,5 +233,7 @@ impl App {
             .expect("Failed to connect to endpoint");
 
         self.state = AppState::Connected;
+        self.editing_area = ActiveEditingArea::Input;
+        self.reset_cursor();
     }
 }

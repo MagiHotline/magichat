@@ -2,14 +2,56 @@ use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Layout, Position},
     style::{Color, Modifier, Style},
-    text::{Line, Text},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
 };
 
 use crate::app::{ActiveEditingArea, App};
 use crate::app::{AppState, InputMode};
 
-pub fn render(app: &mut App, frame: &mut Frame) {
+pub fn render_chat(app: &mut App, frame: &mut Frame) {
+    let layout = Layout::vertical([
+        Constraint::Min(1),
+        Constraint::Length(3),
+        Constraint::Length(1),
+    ]);
+
+    let [messages_area, input_area, _] = frame.area().layout(&layout);
+
+    // Render the three text fields
+    let input = Paragraph::new(app.input.as_str())
+        .style(Style::default().fg(Color::White))
+        .block(Block::bordered().title("Input"));
+    frame.render_widget(input, input_area);
+
+    match app.input_mode {
+        // Hide the cursor.
+        InputMode::Normal => {}
+        #[expect(clippy::cast_possible_truncation)]
+        InputMode::Editing => frame.set_cursor_position(Position::new(
+            // Draw the cursor at the current position in the input field.
+            // This position can be controlled via the left and right arrow key
+            input_area.x + app.curr_char_idx as u16 + 1,
+            input_area.y + 1,
+        )),
+    }
+
+    let messages: Vec<ListItem> = app
+        .messages
+        .iter()
+        .map(|m| {
+            let content = Line::from(Span::raw(format!("{}: {m}", app.host.name)));
+            ListItem::new(content)
+        })
+        .collect();
+
+    frame.render_widget(
+        List::new(messages).block(Block::bordered().title("Messages")),
+        messages_area,
+    );
+}
+
+pub fn render_text_area(app: &mut App, frame: &mut Frame) {
     let outer_layout = Layout::horizontal([
         Constraint::Fill(1),
         Constraint::Percentage(30),
@@ -108,34 +150,27 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let editing_position: (u16, u16) = match app.editing_area {
         ActiveEditingArea::ClientName => (
             host_name_input_area.x + app.curr_char_idx as u16 + 1,
-            // Move one line down, from the border to the input line
             host_name_input_area.y + 1,
         ),
         ActiveEditingArea::ClientSocket => (
             host_socket_input_area.x + app.curr_char_idx as u16 + 1,
-            // Move one line down, from the border to the input line
             host_socket_input_area.y + 1,
         ),
         ActiveEditingArea::DestinationSocket => (
             dest_socket_input_area.x + app.curr_char_idx as u16 + 1,
-            // Move one line down, from the border to the input line
             dest_socket_input_area.y + 1,
         ),
+        _ => unreachable!(),
     };
 
     match app.input_mode {
-        // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
+        // Hide the cursor. `Frame` does this by default.
         InputMode::Normal => {}
-
-        // Make the cursor visible and ask ratatui to put it at the specified coordinates after
-        // rendering
+        // Make the cursor visible
         #[expect(clippy::cast_possible_truncation)]
-        InputMode::Editing => frame.set_cursor_position(Position::new(
-            // Draw the cursor at the current position in the input field.
-            // This position can be controlled via the left and right arrow key
-            editing_position.0,
-            editing_position.1,
-        )),
+        InputMode::Editing => {
+            frame.set_cursor_position(Position::new(editing_position.0, editing_position.1))
+        }
     }
 
     frame.render_widget(
