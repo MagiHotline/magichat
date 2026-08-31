@@ -24,6 +24,7 @@ pub fn update(app: &mut App, key: KeyEvent) {
             KeyCode::BackTab => app.previous_field(),
             KeyCode::Left => app.move_cursor_left(),
             KeyCode::Right => app.move_cursor_right(),
+            KeyCode::Esc => app.input_mode = InputMode::Normal,
             _ => {}
         },
     }

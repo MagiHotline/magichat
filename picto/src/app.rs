@@ -119,15 +119,32 @@ impl App {
             // Reason: Using remove on String works on bytes instead of the chars.
             // Using remove would require special care because of char boundaries.
             // WE DOING IT ANYWAY
+
+            let current_idx = self.curr_char_idx;
+            let from_left_curr_idx = current_idx - 1;
             match self.editing_area {
                 ClientName => {
-                    self.host.name.remove(self.curr_char_idx);
+                    // Getting all characters before the selected character.
+                    let before_char_to_delete = self.host.name.chars().take(from_left_curr_idx);
+                    // Getting all characters after selected character.
+                    let after_char_to_delete = self.host.name.chars().skip(current_idx);
+                    // Put all characters together except the selected one.
+                    // By leaving the selected one out, it is forgotten and therefore deleted.
+                    self.host.name = before_char_to_delete.chain(after_char_to_delete).collect();
                 }
                 ClientSocket => {
-                    self.host_ip_address.remove(self.curr_char_idx);
+                    let before_char_to_delete =
+                        self.host_ip_address.chars().take(from_left_curr_idx);
+                    let after_char_to_delete = self.host_ip_address.chars().skip(current_idx);
+                    self.host_ip_address =
+                        before_char_to_delete.chain(after_char_to_delete).collect();
                 }
                 DestinationSocket => {
-                    self.dest_ip_address.remove(self.curr_char_idx);
+                    let before_char_to_delete =
+                        self.dest_ip_address.chars().take(from_left_curr_idx);
+                    let after_char_to_delete = self.dest_ip_address.chars().skip(current_idx);
+                    self.dest_ip_address =
+                        before_char_to_delete.chain(after_char_to_delete).collect();
                 }
             }
             self.move_cursor_left();
