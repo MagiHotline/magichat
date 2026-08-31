@@ -6,6 +6,6 @@ It only use the Rust standard library. It's still work in progress since I would
 ## Roadmap
 
 - [x] make it work
-- [ ] TUI
+- [x] TUI
 - [ ] Search for active connections in the LAN
 - [ ] Making it more similar to Pictochat, so the user and the connected people can draw together in the TUI
