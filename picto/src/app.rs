@@ -1,7 +1,6 @@
 use crate::app::ActiveEditingArea::{ClientName, ClientSocket, DestinationSocket};
 use client::client::Client;
 use color_eyre::Result;
-use std::slice::Iter;
 
 /// Represents Input modes.
 #[derive(Debug)]
@@ -11,7 +10,6 @@ pub enum InputMode {
 }
 
 /// Enumerates the filling text areas.
-#[repr(C)]
 #[derive(Debug)]
 pub enum ActiveEditingArea {
     ClientName,
