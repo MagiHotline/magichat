@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
 };
 
-use crate::app::{ActiveEditingArea, App};
+use crate::app::{ActiveEditingArea, App, ErrorKind};
 use crate::app::{AppState, InputMode};
 
 pub fn render_chat(app: &mut App, frame: &mut Frame) {
@@ -94,29 +94,39 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
         _,
     ] = main_area.layout(&inner_layout);
 
-    let (msg, style) = match app.state {
-        AppState::Filling => match app.input_mode {
-            InputMode::Normal => (
-                format!("[q] Exit | [e] Edit"),
-                Style::default().add_modifier(Modifier::RAPID_BLINK),
-            ),
-            InputMode::Editing => (
-                format!("[Esc] Stop editing, [Enter] Submit, [Tab/Untab] Move"),
-                Style::default().add_modifier(Modifier::RAPID_BLINK),
+    let (msg, style) = match app.last_error_occured {
+        Some(e) => match e {
+            ErrorKind::EmptyFields => (
+                format!("Not all fields have been filled!"),
+                Style::default()
+                    .add_modifier(Modifier::RAPID_BLINK)
+                    .fg(Color::Red),
             ),
         },
-        AppState::Connection => (
-            format!("Connecting to client..."),
-            Style::default()
-                .add_modifier(Modifier::RAPID_BLINK)
-                .fg(Color::Yellow),
-        ),
-        AppState::Connected => (
-            format!("Connection successful!"),
-            Style::default()
-                .add_modifier(Modifier::RAPID_BLINK)
-                .fg(Color::Green),
-        ),
+        None => match app.state {
+            AppState::Filling => match app.input_mode {
+                InputMode::Normal => (
+                    format!("[q] Exit | [e] Edit"),
+                    Style::default().add_modifier(Modifier::RAPID_BLINK),
+                ),
+                InputMode::Editing => (
+                    format!("[Esc] Stop editing, [Enter] Submit, [Tab/Untab] Move"),
+                    Style::default().add_modifier(Modifier::RAPID_BLINK),
+                ),
+            },
+            AppState::Connection => (
+                format!("Connecting to client..."),
+                Style::default()
+                    .add_modifier(Modifier::RAPID_BLINK)
+                    .fg(Color::Yellow),
+            ),
+            AppState::Connected => (
+                format!("Connection successful!"),
+                Style::default()
+                    .add_modifier(Modifier::RAPID_BLINK)
+                    .fg(Color::Green),
+            ),
+        },
     };
 
     let text = Text::from(Line::from(msg)).patch_style(style);

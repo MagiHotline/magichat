@@ -18,8 +18,9 @@ pub fn update(app: &mut App, key: KeyEvent) {
             },
             InputMode::Editing => match key.code {
                 KeyCode::Enter => {
-                    app.submit();
-                    app.try_connection()
+                    if let Ok(()) = app.submit() {
+                        app.try_connection()
+                    }
                 }
                 KeyCode::Char(to_insert) => app.enter_char(to_insert),
                 KeyCode::Backspace => app.delete_char(),
@@ -33,9 +34,7 @@ pub fn update(app: &mut App, key: KeyEvent) {
         },
         AppState::Connection => {}
         AppState::Connected => match key.code {
-            KeyCode::Enter => {
-                app.submit();
-            }
+            KeyCode::Enter => if let Ok(()) = app.submit() {},
             KeyCode::Char(to_insert) => app.enter_char(to_insert),
             KeyCode::Backspace => app.delete_char(),
             KeyCode::Left => app.move_cursor_left(),

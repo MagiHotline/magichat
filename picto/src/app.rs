@@ -30,6 +30,11 @@ pub enum AppState {
     Connected,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorKind {
+    EmptyFields,
+}
+
 /// App's state.
 pub struct App {
     pub should_quit: bool,
@@ -51,6 +56,8 @@ pub struct App {
     pub messages: Arc<Mutex<Vec<String>>>,
     /// Input chat message
     pub input: String,
+    /// Last Error occured
+    pub last_error_occured: Option<ErrorKind>,
 }
 
 impl Default for App {
@@ -66,6 +73,7 @@ impl Default for App {
             state: AppState::Filling,
             messages: Arc::new(Mutex::new(Vec::new())),
             input: Default::default(),
+            last_error_occured: None,
         }
     }
 }
@@ -221,14 +229,23 @@ impl App {
     }
 
     /// Submits connection's data to the protocol
-    pub fn submit(&mut self) {
+    pub fn submit(&mut self) -> Result<(), ErrorKind> {
         match self.state {
             AppState::Filling => {
+                if self.host.name.is_empty()
+                    || self.dest_ip_address.is_empty()
+                    || self.host_ip_address.is_empty()
+                {
+                    self.last_error_occured = Some(ErrorKind::EmptyFields);
+                    return Err(ErrorKind::EmptyFields);
+                }
+
                 self.state = AppState::Connection;
                 let client = Client::new(self.host.name.clone(), self.host_ip_address.clone())
                     .expect("Failed to create client once submitted");
 
                 self.host = client;
+                Ok(())
             }
             AppState::Connected => {
                 let full_message = format!("{}: {}", self.host.name.clone(), self.input.clone());
@@ -238,8 +255,9 @@ impl App {
                     .expect("Failed to transform string to bytes");
                 self.input.clear();
                 self.reset_cursor();
+                Ok(())
             }
-            _ => {}
+            _ => Ok(()),
         }
     }
 
