@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Layout, Position},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
 };
 
 use crate::app::{ActiveEditingArea, App, ErrorKind};
@@ -144,6 +144,7 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
         .block(Block::bordered().title("Host Name"));
     frame.render_widget(input, host_name_input_area);
 
+    /*
     let input = Paragraph::new(app.host_ip_address.as_str())
         .style(match app.input_mode {
             InputMode::Normal => Style::default(),
@@ -164,20 +165,31 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
                 .border_type(ratatui::widgets::BorderType::Rounded),
         );
     frame.render_widget(input, dest_socket_input_area);
+    */
+
+    let btn_create_room_widget = Paragraph::new("Create a Room")
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded),
+        )
+        .alignment(Alignment::Center);
+    frame.render_widget(btn_create_room_widget, host_socket_input_area);
+
+    let btn_find_room_widget = Paragraph::new("Find a Room")
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded),
+        )
+        .alignment(Alignment::Center);
+    frame.render_widget(btn_find_room_widget, dest_socket_input_area);
 
     // Handle the cursor based of where we are
     let editing_position: (u16, u16) = match app.editing_area {
         ActiveEditingArea::ClientName => (
             host_name_input_area.x + app.curr_char_idx as u16 + 1,
             host_name_input_area.y + 1,
-        ),
-        ActiveEditingArea::ClientSocket => (
-            host_socket_input_area.x + app.curr_char_idx as u16 + 1,
-            host_socket_input_area.y + 1,
-        ),
-        ActiveEditingArea::DestinationSocket => (
-            dest_socket_input_area.x + app.curr_char_idx as u16 + 1,
-            dest_socket_input_area.y + 1,
         ),
         _ => unreachable!(),
     };

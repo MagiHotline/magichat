@@ -3,7 +3,7 @@ use std::{
     thread,
 };
 
-use crate::app::ActiveEditingArea::{ClientName, ClientSocket, DestinationSocket};
+use crate::app::ActiveEditingArea::ClientName;
 use client::client::Client;
 
 /// Represents Input modes.
@@ -17,8 +17,6 @@ pub enum InputMode {
 #[derive(Debug)]
 pub enum ActiveEditingArea {
     ClientName,
-    ClientSocket,
-    DestinationSocket,
     Input,
 }
 
@@ -96,34 +94,16 @@ impl App {
             ActiveEditingArea::ClientName => {
                 new_cursor_pos.clamp(0, self.host.name.chars().count())
             }
-            ActiveEditingArea::ClientSocket => {
-                new_cursor_pos.clamp(0, self.host_ip_address.chars().count())
-            }
-            ActiveEditingArea::DestinationSocket => {
-                new_cursor_pos.clamp(0, self.dest_ip_address.chars().count())
-            }
             ActiveEditingArea::Input => new_cursor_pos.clamp(0, self.input.chars().count()),
         }
     }
 
     pub fn next_field(&mut self) {
-        match self.editing_area {
-            ClientName => self.editing_area = ClientSocket,
-            ClientSocket => self.editing_area = DestinationSocket,
-            DestinationSocket => self.editing_area = ClientName,
-            _ => {}
-        }
-        self.reset_cursor();
+        todo!()
     }
 
     pub fn previous_field(&mut self) {
-        match self.editing_area {
-            ClientName => self.editing_area = DestinationSocket,
-            ClientSocket => self.editing_area = ClientName,
-            DestinationSocket => self.editing_area = ClientSocket,
-            _ => {}
-        }
-        self.reset_cursor();
+        todo!()
     }
 
     pub fn move_cursor_right(&mut self) {
@@ -140,8 +120,6 @@ impl App {
         let idx = self.byte_index();
         match self.editing_area {
             ClientName => self.host.name.insert(idx, ch),
-            ClientSocket => self.host_ip_address.insert(idx, ch),
-            DestinationSocket => self.dest_ip_address.insert(idx, ch),
             ActiveEditingArea::Input => self.input.insert(idx, ch),
         }
         self.move_cursor_right();
@@ -166,20 +144,6 @@ impl App {
                     // By leaving the selected one out, it is forgotten and therefore deleted.
                     self.host.name = before_char_to_delete.chain(after_char_to_delete).collect();
                 }
-                ClientSocket => {
-                    let before_char_to_delete =
-                        self.host_ip_address.chars().take(from_left_curr_idx);
-                    let after_char_to_delete = self.host_ip_address.chars().skip(current_idx);
-                    self.host_ip_address =
-                        before_char_to_delete.chain(after_char_to_delete).collect();
-                }
-                DestinationSocket => {
-                    let before_char_to_delete =
-                        self.dest_ip_address.chars().take(from_left_curr_idx);
-                    let after_char_to_delete = self.dest_ip_address.chars().skip(current_idx);
-                    self.dest_ip_address =
-                        before_char_to_delete.chain(after_char_to_delete).collect();
-                }
                 ActiveEditingArea::Input => {
                     let before_char_to_delete = self.input.chars().take(from_left_curr_idx);
                     let after_char_to_delete = self.input.chars().skip(current_idx);
@@ -203,18 +167,6 @@ impl App {
                 .map(|(i, _)| i)
                 .nth(self.curr_char_idx)
                 .unwrap_or(self.host.name.len()),
-            ActiveEditingArea::ClientSocket => self
-                .host_ip_address
-                .char_indices()
-                .map(|(i, _)| i)
-                .nth(self.curr_char_idx)
-                .unwrap_or(self.host_ip_address.len()),
-            ActiveEditingArea::DestinationSocket => self
-                .dest_ip_address
-                .char_indices()
-                .map(|(i, _)| i)
-                .nth(self.curr_char_idx)
-                .unwrap_or(self.dest_ip_address.len()),
             ActiveEditingArea::Input => self
                 .input
                 .char_indices()
@@ -241,8 +193,8 @@ impl App {
                 }
 
                 self.state = AppState::Connection;
-                let client = Client::new(self.host.name.clone(), self.host_ip_address.clone())
-                    .expect("Failed to create client once submitted");
+                let client = Client::connect(self.host.name.clone(), self.host_ip_address.clone())
+                    .expect("Failed to connect client once submitted");
 
                 self.host = client;
                 Ok(())
@@ -251,7 +203,7 @@ impl App {
                 let full_message = format!("{}: {}", self.host.name.clone(), self.input.clone());
                 self.messages.lock().unwrap().push(full_message.clone());
                 self.host
-                    .send(full_message.as_bytes())
+                    .write(full_message.as_bytes())
                     .expect("Failed to transform string to bytes");
                 self.input.clear();
                 self.reset_cursor();
@@ -264,17 +216,13 @@ impl App {
     /// Once data is submitted, it connects to the destination
     /// If not, sends you back to the Menu with all the areas empty
     pub fn try_connection(&mut self) {
-        self.host
-            .connect(self.dest_ip_address.trim().to_string())
-            .expect("Failed to connect to endpoint");
-
-        let receiver_client = self.host.try_clone().expect("Failed to clone Client");
+        let mut receiver_client = self.host.try_clone().expect("Failed to clone Client");
         // Once connected, spawn the listening thread
         let recv_messages = self.messages.clone();
         thread::spawn(move || {
             loop {
                 let mut buf = [0; 8192];
-                if let Ok(received) = receiver_client.recv(&mut buf) {
+                if let Ok(received) = receiver_client.read(&mut buf) {
                     if let Ok(output) = str::from_utf8(&buf[..received]) {
                         recv_messages.lock().unwrap().push(output.to_string());
                     }
