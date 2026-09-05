@@ -3,8 +3,9 @@ use std::{
     thread,
 };
 
-use crate::app::ActiveEditingArea::ClientName;
 use client::client::Client;
+
+use crate::app::ActiveArea::{ClientName, CreateRoomBtn, FindRoomBtn};
 
 /// Represents Input modes.
 #[derive(Debug)]
@@ -15,8 +16,10 @@ pub enum InputMode {
 
 /// Enumerates the filling text areas.
 #[derive(Debug)]
-pub enum ActiveEditingArea {
+pub enum ActiveArea {
     ClientName,
+    CreateRoomBtn,
+    FindRoomBtn,
     Input,
 }
 
@@ -47,7 +50,7 @@ pub struct App {
     /// Current input mode
     pub input_mode: InputMode,
     /// Current editing area
-    pub editing_area: ActiveEditingArea,
+    pub editing_area: ActiveArea,
     /// App's current state
     pub state: AppState,
     /// Messages that are sent and received
@@ -64,7 +67,7 @@ impl Default for App {
             should_quit: Default::default(),
             host: Default::default(),
             dest_ip_address: Default::default(),
-            editing_area: ClientName,
+            editing_area: ActiveArea::ClientName,
             input_mode: InputMode::Normal,
             curr_char_idx: 0,
             host_ip_address: Default::default(),
@@ -91,19 +94,39 @@ impl App {
         // Based on which Text Field I am I need to clamp the cursor position in
         // that text field
         match self.editing_area {
-            ActiveEditingArea::ClientName => {
-                new_cursor_pos.clamp(0, self.host.name.chars().count())
-            }
-            ActiveEditingArea::Input => new_cursor_pos.clamp(0, self.input.chars().count()),
+            ActiveArea::ClientName => new_cursor_pos.clamp(0, self.host.name.chars().count()),
+            ActiveArea::Input => new_cursor_pos.clamp(0, self.input.chars().count()),
+            _ => 0,
         }
     }
 
     pub fn next_field(&mut self) {
-        todo!()
+        match self.editing_area {
+            ActiveArea::ClientName => {
+                self.editing_area = CreateRoomBtn;
+                self.input_mode = InputMode::Editing;
+            }
+            ActiveArea::CreateRoomBtn => {
+                self.editing_area = FindRoomBtn;
+                self.input_mode = InputMode::Normal;
+            }
+            ActiveArea::FindRoomBtn => {
+                self.editing_area = ClientName;
+                self.input_mode = InputMode::Normal;
+            }
+            _ => {}
+        }
+        self.reset_cursor();
     }
 
     pub fn previous_field(&mut self) {
-        todo!()
+        match self.editing_area {
+            ActiveArea::ClientName => self.editing_area = FindRoomBtn,
+            ActiveArea::CreateRoomBtn => self.editing_area = ClientName,
+            ActiveArea::FindRoomBtn => self.editing_area = CreateRoomBtn,
+            _ => {}
+        }
+        self.reset_cursor();
     }
 
     pub fn move_cursor_right(&mut self) {
@@ -119,8 +142,9 @@ impl App {
     pub fn enter_char(&mut self, ch: char) {
         let idx = self.byte_index();
         match self.editing_area {
-            ClientName => self.host.name.insert(idx, ch),
-            ActiveEditingArea::Input => self.input.insert(idx, ch),
+            ActiveArea::ClientName => self.host.name.insert(idx, ch),
+            ActiveArea::Input => self.input.insert(idx, ch),
+            _ => return,
         }
         self.move_cursor_right();
     }
@@ -135,7 +159,7 @@ impl App {
             let current_idx = self.curr_char_idx;
             let from_left_curr_idx = current_idx - 1;
             match self.editing_area {
-                ClientName => {
+                ActiveArea::ClientName => {
                     // Getting all characters before the selected character.
                     let before_char_to_delete = self.host.name.chars().take(from_left_curr_idx);
                     // Getting all characters after selected character.
@@ -144,11 +168,12 @@ impl App {
                     // By leaving the selected one out, it is forgotten and therefore deleted.
                     self.host.name = before_char_to_delete.chain(after_char_to_delete).collect();
                 }
-                ActiveEditingArea::Input => {
+                ActiveArea::Input => {
                     let before_char_to_delete = self.input.chars().take(from_left_curr_idx);
                     let after_char_to_delete = self.input.chars().skip(current_idx);
                     self.input = before_char_to_delete.chain(after_char_to_delete).collect();
                 }
+                _ => return,
             }
             self.move_cursor_left();
         }
@@ -160,19 +185,20 @@ impl App {
     /// the byte index based on the index of the character.
     fn byte_index(&self) -> usize {
         match self.editing_area {
-            ClientName => self
+            ActiveArea::ClientName => self
                 .host
                 .name
                 .char_indices()
                 .map(|(i, _)| i)
                 .nth(self.curr_char_idx)
                 .unwrap_or(self.host.name.len()),
-            ActiveEditingArea::Input => self
+            ActiveArea::Input => self
                 .input
                 .char_indices()
                 .map(|(i, _)| i)
                 .nth(self.curr_char_idx)
                 .unwrap_or(self.input.len()),
+            _ => 0,
         }
     }
 
@@ -234,7 +260,7 @@ impl App {
         });
 
         self.state = AppState::Connected;
-        self.editing_area = ActiveEditingArea::Input;
+        self.editing_area = ActiveArea::Input;
         self.reset_cursor();
     }
 }

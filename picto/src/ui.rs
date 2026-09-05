@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
 };
 
-use crate::app::{ActiveEditingArea, App, ErrorKind};
+use crate::app::{ActiveArea, App, ErrorKind};
 use crate::app::{AppState, InputMode};
 
 pub fn render_chat(app: &mut App, frame: &mut Frame) {
@@ -186,13 +186,10 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
     frame.render_widget(btn_find_room_widget, dest_socket_input_area);
 
     // Handle the cursor based of where we are
-    let editing_position: (u16, u16) = match app.editing_area {
-        ActiveEditingArea::ClientName => (
-            host_name_input_area.x + app.curr_char_idx as u16 + 1,
-            host_name_input_area.y + 1,
-        ),
-        _ => unreachable!(),
-    };
+    let editing_position: (u16, u16) = (
+        host_name_input_area.x + app.curr_char_idx as u16 + 1,
+        host_name_input_area.y + 1,
+    );
 
     match app.input_mode {
         // Hide the cursor. `Frame` does this by default.
