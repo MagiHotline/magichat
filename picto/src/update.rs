@@ -14,6 +14,8 @@ pub fn update(app: &mut App, key: KeyEvent) {
                     app.input_mode = InputMode::Editing;
                 }
                 KeyCode::Char('q') => app.should_quit = true,
+                KeyCode::Tab => app.next_field(),
+                KeyCode::BackTab => app.previous_field(),
                 _ => {}
             },
             InputMode::Editing => match key.code {

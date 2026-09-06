@@ -102,18 +102,9 @@ impl App {
 
     pub fn next_field(&mut self) {
         match self.editing_area {
-            ActiveArea::ClientName => {
-                self.editing_area = CreateRoomBtn;
-                self.input_mode = InputMode::Editing;
-            }
-            ActiveArea::CreateRoomBtn => {
-                self.editing_area = FindRoomBtn;
-                self.input_mode = InputMode::Normal;
-            }
-            ActiveArea::FindRoomBtn => {
-                self.editing_area = ClientName;
-                self.input_mode = InputMode::Normal;
-            }
+            ActiveArea::ClientName => self.editing_area = CreateRoomBtn,
+            ActiveArea::CreateRoomBtn => self.editing_area = FindRoomBtn,
+            ActiveArea::FindRoomBtn => self.editing_area = ClientName,
             _ => {}
         }
         self.reset_cursor();

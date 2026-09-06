@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Layout, Position},
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
 };
@@ -86,13 +86,8 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
         Constraint::Length(1),
     ]);
 
-    let [
-        _,
-        host_name_input_area,
-        host_socket_input_area,
-        dest_socket_input_area,
-        _,
-    ] = main_area.layout(&inner_layout);
+    let [_, host_name_input_area, create_btn_area, find_btn_area, _] =
+        main_area.layout(&inner_layout);
 
     let (msg, style) = match app.last_error_occured {
         Some(e) => match e {
@@ -144,46 +139,45 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
         .block(Block::bordered().title("Host Name"));
     frame.render_widget(input, host_name_input_area);
 
-    /*
-    let input = Paragraph::new(app.host_ip_address.as_str())
-        .style(match app.input_mode {
-            InputMode::Normal => Style::default(),
-            InputMode::Editing => Style::default().fg(Color::Yellow),
-        })
-        .block(Block::bordered().title("Host Socket"));
-    frame.render_widget(input, host_socket_input_area);
+    let btn_create_room_widget = match app.editing_area {
+        ActiveArea::CreateRoomBtn => Paragraph::new("Create a Room")
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded),
+            )
+            .alignment(Alignment::Center)
+            .style(Style::default().bg(Color::Yellow)),
+        _ => Paragraph::new("Create a Room")
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded),
+            )
+            .alignment(Alignment::Center),
+    };
 
-    let input = Paragraph::new(app.dest_ip_address.as_str())
-        .style(match app.input_mode {
-            InputMode::Normal => Style::default(),
-            InputMode::Editing => Style::default().fg(Color::Yellow),
-        })
-        .block(
-            Block::bordered()
-                .title("Destination Socket")
-                .borders(Borders::ALL)
-                .border_type(ratatui::widgets::BorderType::Rounded),
-        );
-    frame.render_widget(input, dest_socket_input_area);
-    */
+    let btn_find_room_widget = match app.editing_area {
+        ActiveArea::FindRoomBtn => Paragraph::new("Find a Room")
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded),
+            )
+            .alignment(Alignment::Center)
+            .style(Style::default().bg(Color::Yellow)),
+        _ => Paragraph::new("Find a Room")
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded),
+            )
+            .alignment(Alignment::Center),
+    };
 
-    let btn_create_room_widget = Paragraph::new("Create a Room")
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
-        )
-        .alignment(Alignment::Center);
-    frame.render_widget(btn_create_room_widget, host_socket_input_area);
-
-    let btn_find_room_widget = Paragraph::new("Find a Room")
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
-        )
-        .alignment(Alignment::Center);
-    frame.render_widget(btn_find_room_widget, dest_socket_input_area);
+    // Render buttons
+    frame.render_widget(btn_create_room_widget, create_btn_area);
+    frame.render_widget(btn_find_room_widget, find_btn_area);
 
     // Handle the cursor based of where we are
     let editing_position: (u16, u16) = (
@@ -196,9 +190,12 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
         InputMode::Normal => {}
         // Make the cursor visible
         #[expect(clippy::cast_possible_truncation)]
-        InputMode::Editing => {
-            frame.set_cursor_position(Position::new(editing_position.0, editing_position.1))
-        }
+        InputMode::Editing => match app.editing_area {
+            ActiveArea::ClientName | ActiveArea::Input => {
+                frame.set_cursor_position(Position::new(editing_position.0, editing_position.1))
+            }
+            _ => {}
+        },
     }
 
     frame.render_widget(
