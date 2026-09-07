@@ -26,7 +26,7 @@ Once you required the data, press `[Enter]` and you will start the chat if all w
 
 > [!WARNING]
 > You can connect only to who is already inside your LAN. Not from outside since Pictochat does not have port
-> forwarding natively.
+> forwarding natively or NAT traversal.
 
 ## Roadmap
 

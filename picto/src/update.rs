@@ -34,7 +34,7 @@ pub fn update(app: &mut App, key: KeyEvent) {
                 _ => {}
             },
         },
-        AppState::Connection => {}
+        AppState::Connecting => {}
         AppState::Connected => match key.code {
             KeyCode::Enter => if let Ok(()) = app.submit() {},
             KeyCode::Char(to_insert) => app.enter_char(to_insert),
@@ -44,6 +44,8 @@ pub fn update(app: &mut App, key: KeyEvent) {
             KeyCode::Esc => app.should_quit = true,
             _ => {}
         },
+        AppState::FoundRooms => todo!(),
+        AppState::CreateRoom => todo!(),
     }
     /*
 

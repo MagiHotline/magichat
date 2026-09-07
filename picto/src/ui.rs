@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Layout, Position},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
 };
@@ -60,6 +60,112 @@ pub fn render_chat(app: &mut App, frame: &mut Frame) {
     );
 }
 
+pub fn render_create_room_area(app: &mut App, frame: &mut Frame) {
+    let outer_layout = Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Percentage(30),
+        Constraint::Fill(1),
+    ]);
+
+    let [_, center_area, _] = frame.area().layout(&outer_layout);
+
+    let layout = Layout::vertical([
+        Constraint::Min(1),
+        Constraint::Length(13),
+        Constraint::Length(2),
+        Constraint::Min(1),
+    ]);
+
+    let [_, main_area, message_area, _] = center_area.layout(&layout);
+
+    let inner_layout = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(3),
+        Constraint::Length(1),
+    ]);
+
+    let [_, alias_area, _] = main_area.layout(&inner_layout);
+
+    let (msg, style) = match app.last_error_occured {
+        Some(e) => match e {
+            ErrorKind::EmptyFields => (
+                format!("Not all fields have been filled!"),
+                Style::default()
+                    .add_modifier(Modifier::RAPID_BLINK)
+                    .fg(Color::Red),
+            ),
+        },
+        None => match app.state {
+            AppState::Filling | AppState::CreateRoom => match app.input_mode {
+                InputMode::Normal => (
+                    format!("[q] Exit | [e] Edit"),
+                    Style::default().add_modifier(Modifier::RAPID_BLINK),
+                ),
+                InputMode::Editing => (
+                    format!("[Esc] Stop editing, [Enter] Submit"),
+                    Style::default().add_modifier(Modifier::RAPID_BLINK),
+                ),
+            },
+            AppState::Connecting => (
+                format!("Connecting to client..."),
+                Style::default()
+                    .add_modifier(Modifier::RAPID_BLINK)
+                    .fg(Color::Yellow),
+            ),
+            AppState::Connected => (
+                format!("Connection successful!"),
+                Style::default()
+                    .add_modifier(Modifier::RAPID_BLINK)
+                    .fg(Color::Green),
+            ),
+            AppState::FoundRooms => todo!(),
+        },
+    };
+
+    let text = Text::from(Line::from(msg)).patch_style(style);
+    let help_message = Paragraph::new(text)
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true });
+    frame.render_widget(help_message, message_area);
+
+    let input = Paragraph::new(app.alias.as_str())
+        .style(match app.input_mode {
+            InputMode::Normal => Style::default(),
+            InputMode::Editing => Style::default().fg(Color::Yellow),
+        })
+        .block(Block::bordered().title("Host Name"));
+    frame.render_widget(input, alias_area);
+
+    // Handle the cursor based of where we are
+    let editing_position: (u16, u16) = (
+        alias_area.x + app.curr_char_idx as u16 + 1,
+        alias_area.y + 1,
+    );
+
+    match app.input_mode {
+        // Hide the cursor. `Frame` does this by default.
+        InputMode::Normal => {}
+        // Make the cursor visible
+        #[expect(clippy::cast_possible_truncation)]
+        InputMode::Editing => match app.editing_area {
+            ActiveArea::ClientName | ActiveArea::Input | ActiveArea::Alias => {
+                frame.set_cursor_position(Position::new(editing_position.0, editing_position.1))
+            }
+            _ => {}
+        },
+    }
+
+    frame.render_widget(
+        Block::default()
+            .title("Pictochat")
+            .title_alignment(Alignment::Center)
+            .borders(Borders::ALL)
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .style(Style::default().fg(Color::White)),
+        main_area,
+    );
+}
+
 pub fn render_text_area(app: &mut App, frame: &mut Frame) {
     let outer_layout = Layout::horizontal([
         Constraint::Fill(1),
@@ -109,7 +215,7 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
                     Style::default().add_modifier(Modifier::RAPID_BLINK),
                 ),
             },
-            AppState::Connection => (
+            AppState::Connecting => (
                 format!("Connecting to client..."),
                 Style::default()
                     .add_modifier(Modifier::RAPID_BLINK)
@@ -121,6 +227,8 @@ pub fn render_text_area(app: &mut App, frame: &mut Frame) {
                     .add_modifier(Modifier::RAPID_BLINK)
                     .fg(Color::Green),
             ),
+            AppState::CreateRoom => todo!(),
+            AppState::FoundRooms => todo!(),
         },
     };
 

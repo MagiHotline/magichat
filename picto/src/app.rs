@@ -21,13 +21,16 @@ pub enum ActiveArea {
     CreateRoomBtn,
     FindRoomBtn,
     Input,
+    Alias,
 }
 
 /// Represents App's states
 #[derive(Debug)]
 pub enum AppState {
     Filling,
-    Connection,
+    CreateRoom,
+    Connecting,
+    FoundRooms,
     Connected,
 }
 
@@ -45,6 +48,8 @@ pub struct App {
     pub host_ip_address: String,
     /// Socket you want to connect to
     pub dest_ip_address: String,
+    /// Alias for your room
+    pub alias: String,
     /// Current cursor posistion
     pub curr_char_idx: usize,
     /// Current input mode
@@ -64,16 +69,17 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
+            alias: Default::default(),
             should_quit: Default::default(),
             host: Default::default(),
             dest_ip_address: Default::default(),
+            host_ip_address: Default::default(),
+            input: Default::default(),
             editing_area: ActiveArea::ClientName,
             input_mode: InputMode::Normal,
             curr_char_idx: 0,
-            host_ip_address: Default::default(),
             state: AppState::Filling,
             messages: Arc::new(Mutex::new(Vec::new())),
-            input: Default::default(),
             last_error_occured: None,
         }
     }
@@ -201,19 +207,17 @@ impl App {
     pub fn submit(&mut self) -> Result<(), ErrorKind> {
         match self.state {
             AppState::Filling => {
-                if self.host.name.is_empty()
-                    || self.dest_ip_address.is_empty()
-                    || self.host_ip_address.is_empty()
-                {
+                if self.host.name.is_empty() {
                     self.last_error_occured = Some(ErrorKind::EmptyFields);
                     return Err(ErrorKind::EmptyFields);
                 }
 
-                self.state = AppState::Connection;
-                let client = Client::connect(self.host.name.clone(), self.host_ip_address.clone())
-                    .expect("Failed to connect client once submitted");
+                match self.editing_area {
+                    CreateRoomBtn => self.state = AppState::CreateRoom,
+                    FindRoomBtn => self.state = AppState::FoundRooms,
+                    _ => unimplemented!(),
+                }
 
-                self.host = client;
                 Ok(())
             }
             AppState::Connected => {
@@ -224,6 +228,15 @@ impl App {
                     .expect("Failed to transform string to bytes");
                 self.input.clear();
                 self.reset_cursor();
+                Ok(())
+            }
+            AppState::CreateRoom => {
+                if self.alias.is_empty() {
+                    self.last_error_occured = Some(ErrorKind::EmptyFields);
+                    return Err(ErrorKind::EmptyFields);
+                }
+
+                self.state = AppState::FoundRooms;
                 Ok(())
             }
             _ => Ok(()),

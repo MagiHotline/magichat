@@ -71,6 +71,7 @@ impl Tui {
     pub fn draw(&mut self, app: &mut App) -> Result<()> {
         self.terminal.draw(|frame| match app.state {
             AppState::Connected => ui::render_chat(app, frame),
+            AppState::CreateRoom => ui::render_create_room_area(app, frame),
             _ => ui::render_text_area(app, frame),
         })?;
         Ok(())
